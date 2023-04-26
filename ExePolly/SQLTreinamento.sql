@@ -1,3 +1,6 @@
+
+SQL Database Hospital
+
 SELECT * FROM patients;
 
 
@@ -650,14 +653,244 @@ WITH admissions_count AS (
   GROUP BY admission_date
 )
 SELECT 
-  admission_date, 
-  admission_day, 
- COUNT(admission_date) - lag(count(admission_date)) 
- over (order by admission_date) as admission_count_change
+  a.*
+  , a.admission_day - lag(a.admission_day, 1, null) over (order by admission_date ) as admission_count_change
 FROM 
-  admissions_count
+  admissions_count a
 ORDER BY 
-  admission_date DESC;
+  a.admission_date ASC;
+
+SELECT
+ admission_date,
+ count(admission_date) as admission_day,
+ count(admission_date) - LAG(count(admission_date)) OVER(ORDER BY admission_date) AS admission_count_change 
+FROM admissions
+ group by admission_date
+
+
+ WITH admission_counts_table AS (
+  SELECT admission_date, COUNT(patient_id) AS admission_count
+  FROM admissions
+  GROUP BY admission_date
+  ORDER BY admission_date DESC
+)
+select
+  admission_date, 
+  admission_count, 
+  admission_count - LAG(admission_count) OVER(ORDER BY admission_date) AS admission_count_change 
+from admission_counts_table
 
 ==============================================================================================
 
+
+Sort the province names in ascending order in such a way that the province 'Ontario' is always on top.
+
+select  Distinct province_name
+from province_names
+order by
+(Case 
+ 	when province_name = 'Ontario' then 0
+	else 1
+end),
+province_name Asc
+
+
+select province_name
+from province_names
+order by
+  (case when province_name = 'Ontario' then 0 else 1 end),
+  province_name;
+
+
+  select province_name
+from province_names
+order by
+  province_name = 'Ontario' desc,
+  province_name;
+
+
+  select province_name
+from province_names
+order by
+  (not province_name = 'Ontario'),
+  province_name;
+
+================================================================================================
+
+SQL Database Northwind
+
+
+Show the category_name and description from the categories table sorted by category_name
+
+select category_name, description
+from categories
+order by category_name;
+
+===================================================================================================
+
+Show all the contact_name, address, city of all customers which are not from 'Germany', 'Mexico', 'Spain'
+
+select 
+	contact_name,
+    address,
+    city
+from customers
+where country not in ('Germany', 'Mexico', 'Spain');
+
+=====================================================================================================
+
+Show order_date, shipped_date, customer_id, Freight of all orders placed on 2018 Feb 26
+
+select order_date, shipped_date, customer_id, freight
+from orders
+where order_date = '2018-02-26';
+
+====================================================================================================
+
+Show the employee_id, order_id, customer_id, required_date, shipped_date from all orders shipped later than the required date
+
+select employee_id, order_id, customer_id, required_date, shipped_date
+from orders
+where shipped_date > required_date;
+
+======================================================================================================
+
+Show all the even numbered Order_id from the orders table
+
+select order_id
+from orders
+where order_id % 2 = 0;
+
+
+SELECT order_id
+FROM orders
+WHERE mod(order_id,2)=0;
+
+=======================================================================================================
+
+Show the city, company_name, contact_name of all customers from cities which contains the letter 'L' in the city name, sorted by contact_name
+
+select city, company_name, contact_name
+from customers
+where city like '%L%'
+order by contact_name;
+
+==========================================================================================================
+
+Show the company_name, contact_name, fax number of all customers that has a fax number. (not null)
+
+select company_name, contact_name, fax
+from customers
+where fax Is not null
+;
+
+=======================================================================================================
+
+
+Show the first_name, last_name of the most recently hired employee.
+
+
+select first_name, last_name, max(hire_date)
+from employees
+;
+
+=========================================================================================================
+
+Show the average unit price rounded to 2 decimal places, the total units in stock, total discontinued products from the products table.
+
+select Round(AVG(unit_price),2) as average_price,
+	SUm(units_in_stock) as total_stock,
+    Sum(discontinued) as total_discontinued
+from products;
+
+=======================================================================================================
+
+Show the ProductName, CompanyName, CategoryName from the products, suppliers, and categories table
+
+select
+	p.product_name,
+    s.company_name,
+    c.category_name
+from products p
+join categories c on c.category_id = p.category_id
+join suppliers s on s.supplier_id = p.supplier_id;
+
+======================================================================================================
+
+Show the category_name and the average product unit price for each category rounded to 2 decimal places.
+
+select
+	c.category_name,
+    Round(AVG(p.unit_price),2) as average_unit_price
+from categories c
+join products p on p.category_id = c.category_id
+group by c.category_name;
+
+
+SELECT c.category_name, round(avg(p.unit_price),2) as average_unit_price
+FROM products p
+JOIN categories c On c.category_id = p.Category_id
+GROUP BY c.category_name;
+
+===============================================================================================
+
+Show the city, company_name, contact_name from the customers and suppliers table merged together.
+Create a column which contains 'customers' or 'suppliers' depending on the table it came from.
+
+select
+	city,
+    company_name,
+    contact_name,
+    'customers' as relationship    
+from customers    
+union 
+select 
+	city,
+    company_name,
+    contact_name,
+    'suppliers' as relationship  
+from suppliers
+
+===============================================================================================
+
+Show the employee's first_name and last_name, a "num_orders" column with a count of the orders taken, 
+and a column called "Shipped" that displays "On Time" if the order shipped on time and "Late" if the order shipped late.
+Order by employee last_name, then by first_name, and then descending by number of orders.
+
+
+
+SELECT 
+  e.first_name, 
+  e.last_name, 
+  COUNT(o.order_id) AS num_orders,
+CASE 
+  WHEN o.shipped_date < o.required_date THEN 'On Time'
+  ELSE 'Late' 
+END AS Shipped
+FROM employees e
+LEFT JOIN orders o
+ON e.employee_id = o.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name, Shipped
+ORDER BY e.last_name ASC, e.first_name ASC, num_orders DESC;
+
+
+SELECT
+  e.first_name,
+  e.last_name,
+  COUNT(o.order_id) As num_orders,
+  (
+    CASE
+      WHEN o.shipped_date < o.required_date THEN 'On Time'
+      ELSE 'Late'
+    END
+  ) AS shipped
+FROM orders o
+  JOIN employees e ON e.employee_id = o.employee_id
+GROUP BY
+  e.first_name,
+  e.last_name,
+  shipped
+ORDER BY
+  e.last_name,
+  e.first_name,
+  num_orders DESC
