@@ -1,0 +1,65 @@
+--Criando FUNCTION SCALAR
+CREATE FUNCTION uFN_AGE
+(
+@DTNASCIMENTO DATE
+)
+RETURNS INT
+AS
+BEGIN
+	DECLARE @AGE INT
+	SET @AGE = DATEDIFF(YEAR, @DTNASCIMENTO,CONVERT(DATE,GETDATE()))
+	
+	RETURN @AGE 
+END
+go
+
+--Executando FUNCTION SCALAR
+SELECT  
+	NOME, 
+	DATANASCIMENTO, 
+	dbo.uFN_AGE(DATANASCIMENTO) AS IDADE 
+FROM FUNCIONARIO
+go
+
+-- executando function apenas com select
+select dbo.uFN_AGE ('1991-11-23')
+
+
+--Criando FUNCTION TABLE VALUED
+CREATE FUNCTION uFN_DEMITIDO_APOS
+(
+@DT DATE
+)
+RETURNS TABLE
+AS
+RETURN
+
+	SELECT * FROM uVW_DEMITIDOS as VW_D
+	WHERE VW_D.[DATA DEMISSÃO] >=  @DT
+
+
+--Executando FUNCTION TABLE VALUED
+SELECT * 
+FROM uFN_DEMITIDO_APOS ('2016-01-01')
+GO
+/******** EXEMPLO 2 *******/
+
+--Criando FUNCTION SCALAR para calcular uma nota
+create function ufn_resultado_prova
+(@n1 numeric, @n2 numeric)
+returns varchar(20)
+as
+begin
+	declare @resultado varchar(20),	@soma numeric
+	set @soma = (@n1 +@n2) /2
+
+	if (@soma > = 7)
+		select @resultado = 'Aprovado'
+	else
+		select @resultado = 'Reprovado'
+return @resultado
+end
+
+
+--Executando FUNCTION SCALAR para calcular nota
+select dbo.ufn_resultado_prova (5,5)
